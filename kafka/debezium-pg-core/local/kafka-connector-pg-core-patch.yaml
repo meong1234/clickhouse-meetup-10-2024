@@ -8,6 +8,6 @@ metadata:
 spec:
   config:
     #table config
-    table.include.list: debezium_heartbeat,orders
+    table.include.list: postgres.debezium_heartbeat,postgres.orders
     #message key transformer
-    message.key.columns: orders:customer_id
+    message.key.columns: postgres.orders:customer_id
