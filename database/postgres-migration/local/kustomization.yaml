@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: migration-part-1
+    namespace: database
+    files:
+      - ../base/transaction/V1__create_schema.sql
+      - ../base/transaction/V2__create_table_orders.sql
+      - ../base/transaction/V3__create_table_debezium_heartbeat.sql
+
+resources:
+  - postgres-migration-secrets.yaml
+  - ../base/postgres-migration.yaml

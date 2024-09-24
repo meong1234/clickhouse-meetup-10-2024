@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-migration-job
+  namespace: database
+spec:
+  template:
+    spec:
+      containers:
+        - name: flyway
+          image: flyway/flyway:10.1-alpine
+          args:
+            - migrate
+          env:
+            - name: FLYWAY_LOCATIONS
+              value: 'filesystem:/flyway/migrations'
+            - name: FLYWAY_CONNECT_RETRIES
+              value: '60'
+            - name: FLYWAY_SCHEMAS
+              value: "postgres"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-migration-secrets
+                  key: db_host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-migration-secrets
+                  key: db_port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-migration-secrets
+                  key: db_name
+            - name: FLYWAY_DRIVER
+              value: 'org.postgresql.Driver'
+            - name: FLYWAY_URL
+              value: 'jdbc:postgresql://$(DB_HOST):$(DB_PORT)/$(DB_NAME)'
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-migration-secrets
+                  key: db_user
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-migration-secrets
+                  key: db_password
+            - name: FLYWAY_POSTGRESQL_TRANSACTIONAL_LOCK
+              value: "false"
+            - name: FLYWAY_MIXED
+              value: "true"
+          volumeMounts:
+            - mountPath: /flyway/migrations
+              name: sql
+      volumes:
+        - name: sql
+          projected:
+            sources:
+              - configMap:
+                  name: migration-part-1
+      restartPolicy: Never
