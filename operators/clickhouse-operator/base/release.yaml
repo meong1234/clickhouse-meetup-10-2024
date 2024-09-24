@@ -64,4 +64,4 @@ spec:
     configs:
       config.yaml:
         watch:
-          namespaces: ["analytics-db"]
+          namespaces: ["database"]

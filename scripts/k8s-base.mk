@@ -23,3 +23,17 @@ k8s-create-cluster:
 k8s-delete-cluster:
 	telepresence quit -s
 	kind delete cluster --name $(KIND_CLUSTER)
+
+
+ALTINITY-CLICKHOUSE-OPERATOR     := altinity/clickhouse-operator:0.23.3
+ALTINITY-METRICS-EXPORTER        := altinity/metrics-exporter:0.23.3
+CLICKHOUSE-SERVER        		 := clickhouse/clickhouse-server:24.2
+
+k8s-pull-apps-docker:
+	docker pull $(ALTINITY-CLICKHOUSE-OPERATOR)
+	docker pull $(ALTINITY-METRICS-EXPORTER)
+	docker pull $(CLICKHOUSE-SERVER)
+
+	kind load docker-image $(ALTINITY-CLICKHOUSE-OPERATOR) --name $(KIND_CLUSTER)
+	kind load docker-image $(ALTINITY-METRICS-EXPORTER) --name $(KIND_CLUSTER)
+	kind load docker-image $(CLICKHOUSE-SERVER) --name $(KIND_CLUSTER)

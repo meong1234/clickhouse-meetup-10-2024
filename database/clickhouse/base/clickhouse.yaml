@@ -1,0 +1,94 @@
+apiVersion: "clickhouse.altinity.com/v1"
+kind: "ClickHouseInstallation"
+metadata:
+  name: "clickhouse-db"
+  namespace: database
+spec:
+  defaults:
+    templates:
+      dataVolumeClaimTemplate: clickhouse-data-storage
+      logVolumeClaimTemplate: clickhouse-log-storage
+      podTemplate: clickhouse-pod-template
+  configuration:
+    settings:
+      logger/level: information
+      max_server_memory_usage_to_ram_ratio: "0.7"
+    users:
+      biuser/k8s_secret_password: database/clickhouse-db-user-secrets/db_password
+      biuser/profile: default
+      biuser/quota: default
+      biuser/access_management: "1"
+      biuser/named_collection_control: "1"
+      biuser/show_named_collections_secrets: "1"
+      biuser/show_named_collections: "1"
+      clickhouse/networks/ip:
+        - 0.0.0.0/0
+        - '::/0'
+    profiles:
+      default/query_profiler_real_time_period_ns: 0
+      default/query_profiler_cpu_time_period_ns: 0
+      default/do_not_merge_across_partitions_select_final: 1
+      default/final: 1
+    clusters:
+      - name: "database"
+        layout:
+          shardsCount: 1
+          replicasCount: 1
+
+    files:
+      config.d/query_log_ttl.xml: |
+        <yandex>
+            <query_log replace="1">
+                <database>system</database>
+                <table>query_log</table>
+                <engine>Engine = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + interval 7 day</engine>
+                <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+            </query_log>
+            <query_thread_log remove="1"/>
+        </yandex>
+      config.d/trace_log_ttl.xml: |
+        <yandex>
+            <trace_log replace="1">
+                <database>system</database>
+                <table>trace_log</table>
+                <engine>Engine = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + interval 7 day</engine>
+                <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+            </trace_log>
+        </yandex>
+
+  templates:
+    podTemplates:
+      - name: clickhouse-pod-template
+        spec:
+          containers:
+            - name: clickhouse
+              image: clickhouse/clickhouse-server:24.2
+              volumeMounts:
+                - name: clickhouse-data-storage
+                  mountPath: /var/lib/clickhouse
+                - name: clickhouse-log-storage
+                  mountPath: /var/log/clickhouse-server
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "256m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "256m"
+          distribution: "OnePerHost"
+
+    volumeClaimTemplates:
+      - name: clickhouse-data-storage
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi
+      - name: clickhouse-log-storage
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
