@@ -61,7 +61,8 @@ spec:
       image:
         repository: altinity/metrics-exporter
 
-    configs:
-      config.yaml:
-        watch:
-          namespaces: ["database"]
+    config:
+      files:
+        config.yaml:
+          watch:
+            namespaces: ["database"]
