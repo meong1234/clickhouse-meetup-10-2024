@@ -21,7 +21,7 @@ spec:
       biuser/named_collection_control: "1"
       biuser/show_named_collections_secrets: "1"
       biuser/show_named_collections: "1"
-      clickhouse/networks/ip:
+      biuser/networks/ip:
         - 0.0.0.0/0
         - '::/0'
     profiles:

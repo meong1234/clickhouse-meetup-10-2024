@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: migration-analytics-part-1
+    namespace: database
+    files:
+      - ../base/sql/00001_iot_battery_metrics.sql
+      - ../base/sql/00002_iot_battery_last_location.sql
+      - ../base/sql/00003_iot_battery_last_location_mv.sql
+resources:
+  - clickhouse-migration-secrets.yaml
+  - ../base/analytics-migration-job.yaml

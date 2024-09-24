@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: clickhouse-migration-job
+  namespace: database
+spec:
+  template:
+    spec:
+      containers:
+        - name: goose
+          image: ghcr.io/kukymbr/goose-docker:3.19.2
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-migration-secrets
+                  key: db_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-migration-secrets
+                  key: db_password
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-migration-secrets
+                  key: db_host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-migration-secrets
+                  key: db_port
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-migration-secrets
+                  key: db_name
+            - name: GOOSE_DRIVER
+              value: 'clickhouse'
+            - name: GOOSE_DBSTRING
+              value: 'tcp://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)'
+          volumeMounts:
+            - mountPath: /migrations
+              name: sql
+      volumes:
+        - name: sql
+          projected:
+            sources:
+              - configMap:
+                  name: migration-analytics-part-1
+      restartPolicy: Never
