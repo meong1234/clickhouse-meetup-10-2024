@@ -1,0 +1,17 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: debezium-kafkaconnect
+  namespace: kafka-hub
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 3.7.0
+  replicas: 1
+  image: strimzi-kafka-connect:0.40.0-kafka-3.7.0
+  resources:
+    requests:
+      cpu: "200m"
+      memory: 1Gi
+    limits:
+      memory: 1Gi

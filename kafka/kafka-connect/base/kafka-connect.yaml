@@ -1,0 +1,48 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: debezium-kafkaconnect
+  namespace: kafka-hub
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 3.7.0
+  replicas: 1
+  image: strimzi-kafka-connect:0.40.0-kafka-3.7.0
+  bootstrapServers: kafka-hub-kafka-bootstrap:9092
+  config:
+    config.providers: secrets
+    config.providers.secrets.class: io.strimzi.kafka.KubernetesSecretConfigProvider
+    group.id: connect-cluster
+    offset.storage.topic: connect-cluster-offsets
+    config.storage.topic: connect-cluster-configs
+    status.storage.topic: connect-cluster-status
+    # -1 means it will use the default replication factor configured in the broker
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+  resources:
+    requests:
+      cpu: "200m"
+      memory: 1Gi
+    limits:
+      memory: 1Gi
+  readinessProbe:
+    initialDelaySeconds: 15
+    timeoutSeconds: 5
+  livenessProbe:
+    initialDelaySeconds: 15
+    timeoutSeconds: 5
+
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        name: kafka-metrics
+        key: kafka-connect-metrics-config.yml
+
+  logging:
+    type: inline
+    loggers:
+      connect.root.logger.level: INFO
+      log4j.logger.org.apache.kafka.connect.runtime.rest.RestServer: WARN
