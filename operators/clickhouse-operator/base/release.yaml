@@ -1,0 +1,67 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: clickhouse-operator
+  namespace: db-controller
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: altinity-clickhouse-operator
+      version: 0.23.3
+      sourceRef:
+        kind: HelmRepository
+        name: altinity-charts
+        namespace: flux-system
+      interval: 15m
+  maxHistory: 2
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  valuesFrom:
+    - kind: Secret
+      name: clickhouse-operator-secrets
+      valuesKey: operator_username
+      targetPath: secret.username
+    - kind: Secret
+      name: clickhouse-operator-secrets
+      valuesKey: operator_password
+      targetPath: secret.password
+  values:
+    serviceMonitor:
+      enabled: true
+    dashboards:
+      enabled: false
+      grafana_folder: clickhouse
+      annotations:
+        grafana_folder: "clickhouse"
+      additionalLabels:
+        grafana_dashboard: "1"
+    operator:
+      image:
+        repository: altinity/clickhouse-operator
+      resources:
+        limits:
+          memory: 128Mi
+          cpu: 100m
+        requests:
+          memory: 128Mi
+          cpu: 100m
+    metrics:
+      enabled: true
+      image:
+        repository: altinity/metrics-exporter
+
+    configs:
+      config.yaml:
+        watch:
+          namespaces: ["analytics-db"]
