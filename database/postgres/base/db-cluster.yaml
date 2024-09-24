@@ -39,7 +39,7 @@ spec:
     pg_hba:
       - hostssl postgres streaming_replica all cert
       - hostssl replication streaming_replica all cert
-      - hostssl pguser streaming_replica all cert
+      - hostssl pg-core streaming_replica all cert
       - local all pguser trust
       - host all pguser localhost trust
       - local all postgres trust
