@@ -1,0 +1,56 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg-core
+  namespace: database
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4-bookworm
+
+  instances: 1
+
+  startDelay: 300
+  stopDelay: 300
+  primaryUpdateStrategy: unsupervised
+
+  superuserSecret:
+    name: pg-core-super-secret
+  enableSuperuserAccess: true
+
+  bootstrap:
+    initdb:
+      database: pg-core
+      owner: pguser
+      secret:
+        name: pg-core-user-secret
+
+  postgresql:
+    parameters:
+      timezone: "Asia/Jakarta"
+      shared_buffers: 256MB
+      pg_stat_statements.max: '10000'
+      pg_stat_statements.track: all
+      auto_explain.log_min_duration: '10s'
+      exit_on_error: "on"
+      max_slot_wal_keep_size: "10GB"
+      wal_keep_size: "2GB"
+      wal_receiver_timeout: 5s
+      wal_sender_timeout: 5s
+    pg_hba:
+      - hostssl postgres streaming_replica all cert
+      - hostssl replication streaming_replica all cert
+      - hostssl pguser streaming_replica all cert
+      - local all pguser trust
+      - host all pguser localhost trust
+      - local all postgres trust
+      - host all postgres localhost trust
+      - host all all 0.0.0.0/0 md5
+      - host all all ::0/0 md5
+
+  monitoring:
+    enablePodMonitor: true
+
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required

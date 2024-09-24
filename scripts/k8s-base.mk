@@ -24,6 +24,8 @@ GOOSE-MIGRATION        		 	 := ghcr.io/kukymbr/goose-docker:3.19.2
 STRIMZI-OPERATOR        		 := quay.io/strimzi/operator:0.40.0
 STRIMZI-KAFKA        		 	 := quay.io/strimzi/kafka:0.40.0-kafka-3.7.0
 STRIMZI-KAFKA-CONNECT 			 := strimzi-kafka-connect:0.40.0-kafka-3.7.0
+CLOUDNATIVE-PG 			 		 := ghcr.io/cloudnative-pg/cloudnative-pg:1.24.0
+CLOUDNATIVE-PG-POSTGRES 		 := ghcr.io/cloudnative-pg/postgresql:16.4-bookworm
 
 k8s-pull-apps-docker:
 	docker pull $(ALTINITY-CLICKHOUSE-OPERATOR)
@@ -32,10 +34,10 @@ k8s-pull-apps-docker:
 	docker pull $(GOOSE-MIGRATION)
 	docker pull $(STRIMZI-OPERATOR)
 	docker pull $(STRIMZI-KAFKA)
-	docker build --progress=plain \
-     		-f ./docker-images/strimzi-kafka-connect.Dockerfile \
-     		--tag $(STRIMZI-KAFKA-CONNECT) \
-     		.
+	docker pull $(CLOUDNATIVE-PG)
+	docker build --progress=plain -f ./docker-images/strimzi-kafka-connect.Dockerfile --tag $(STRIMZI-KAFKA-CONNECT) .
+	docker pull $(CLOUDNATIVE-PG)
+	docker pull $(CLOUDNATIVE-PG-POSTGRES)
 
 	kind load docker-image $(ALTINITY-CLICKHOUSE-OPERATOR) --name $(KIND_CLUSTER)
 	kind load docker-image $(ALTINITY-METRICS-EXPORTER) --name $(KIND_CLUSTER)
@@ -44,3 +46,5 @@ k8s-pull-apps-docker:
 	kind load docker-image $(STRIMZI-OPERATOR) --name $(KIND_CLUSTER)
 	kind load docker-image $(STRIMZI-KAFKA) --name $(KIND_CLUSTER)
 	kind load docker-image $(STRIMZI-KAFKA-CONNECT) --name $(KIND_CLUSTER)
+	kind load docker-image $(CLOUDNATIVE-PG) --name $(KIND_CLUSTER)
+	kind load docker-image $(CLOUDNATIVE-PG-POSTGRES) --name $(KIND_CLUSTER)
