@@ -5,6 +5,8 @@ metadata:
   name: clickhouse-operator
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: bootstrap
   interval: 10m
   retryInterval: 1m
   timeout: 5m

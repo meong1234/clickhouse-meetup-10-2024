@@ -5,6 +5,8 @@ metadata:
   name: db-clickhouse
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: clickhouse-operator
   interval: 10m
   retryInterval: 1m
   timeout: 5m
