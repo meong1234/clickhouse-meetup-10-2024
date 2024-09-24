@@ -56,13 +56,10 @@ spec:
         requests:
           memory: 128Mi
           cpu: 100m
+      env:
+        - name: WATCH_NAMESPACES
+          value: database
     metrics:
       enabled: true
       image:
         repository: altinity/metrics-exporter
-
-    config:
-      files:
-        config.yaml:
-          watch:
-            namespaces: ["database"]
