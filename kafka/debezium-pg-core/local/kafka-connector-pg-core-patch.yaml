@@ -1,0 +1,13 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: debezium-pg-core-connector
+  labels:
+    strimzi.io/cluster: debezium-kafkaconnect
+  namespace: kafka-hub
+spec:
+  config:
+    #table config
+    table.include.list: debezium_heartbeat,orders
+    #message key transformer
+    message.key.columns: orders:customer_id

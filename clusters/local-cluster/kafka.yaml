@@ -34,3 +34,22 @@ spec:
   path: ./kafka/kafka-connect/local
   prune: true
   wait: true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: kafka-connect-debezium
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: kafka-connect
+    - name: db-postgres-migration
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./kafka/debezium-pg-core/local
+  prune: true
+  wait: true

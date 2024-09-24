@@ -1,0 +1,43 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: debezium-pg-core-connector
+  labels:
+    strimzi.io/cluster: debezium-kafkaconnect
+  namespace: kafka-hub
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  config:
+    tasks.max: 1
+    #database config
+    database.dbname: pg-core
+    database.hostname: pg-core-rw.database.svc.cluster.local
+    database.port: "5432"
+    database.user: ${secrets:database/pg-core-super-secret:username}
+    database.password: ${secrets:database/pg-core-super-secret:password}
+    plugin.name: pgoutput
+    publication.autocreate.mode: filtered
+    publication.name: "dbz_domain_event_publication"
+    #errors config
+    errors.tolerance: all
+    errors.retry.delay.max.ms: 30000
+    errors.retry.timeout: -1
+    errors.log.enable: "true"
+    errors.log.include.messages: "true"
+    #slot configuration
+    heartbeat.interval.ms: 600000
+    heartbeat.topics.prefix: "__debezium-heartbeat-pd"
+    heartbeat.action.query: "INSERT INTO debezium_heartbeat (id, ts) VALUES (1, NOW()) ON CONFLICT(id) DO UPDATE SET ts=EXCLUDED.ts;"
+    slot.max.retries: 1000
+    #topic config
+    topic.prefix: pg-core
+    topic.creation.default.cleanup.policy: delete
+    topic.creation.default.partitions: 10
+    topic.creation.default.replication.factor: 1
+    topic.creation.default.retention.ms: 86400000
+    topic.creation.enable: true
+    #message config
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: false

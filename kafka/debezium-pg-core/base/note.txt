@@ -1,0 +1,42 @@
+-- ALTER PUBLICATION dbz_domain_event_publication ADD TABLE debezium_heartbeat;
+-- select * from pg_catalog.pg_publication;
+-- select * from pg_publication_tables;
+-- DROP PUBLICATION dbz_domain_event_publication;
+
+-- select * from debezium_heartbeat;
+-- delete from debezium_heartbeat;
+
+
+select   pid, client_addr, state, sync_state,
+         pg_wal_lsn_diff(sent_lsn, write_lsn) as write_lag,
+         pg_wal_lsn_diff(sent_lsn, flush_lsn) as flush_lag,
+         pg_wal_lsn_diff(sent_lsn, replay_lsn) as replay_lag
+from pg_stat_replication;
+-- SELECT pg_terminate_backend(3926);
+
+SELECT
+  slot_name,
+  restart_lsn,
+  confirmed_flush_lsn,
+  pg_current_wal_lsn() current_lsn,
+  pg_size_pretty(
+    pg_wal_lsn_diff(
+      pg_current_wal_lsn(), restart_lsn)) AS restart_lag,
+  pg_size_pretty(
+      pg_wal_lsn_diff(
+        pg_current_wal_lsn(), confirmed_flush_lsn)) AS confirmed_lag,
+  active
+FROM pg_replication_slots;
+
+SELECT
+  slot_name,
+  restart_lsn,
+  confirmed_flush_lsn,
+  active
+FROM pg_replication_slots;
+
+SELECT * FROM pg_replication_slots;
+
+select pg_drop_replication_slot('debezium');
+
+SELECT data FROM pg_logical_slot_get_changes('debezium', NULL,NULL, 'pgoutput', '0', 'skip-empty-xacts', '1');
