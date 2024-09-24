@@ -1,0 +1,13 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: iot-battery
+  namespace: kafka-hub
+  labels:
+    strimzi.io/cluster: kafka-hub
+spec:
+  partitions: 16
+  replicas: 1
+  config:
+    retention.ms: 86400000
+    segment.bytes: 1073741824

@@ -4,3 +4,4 @@ resources:
   - bootstrap.yaml
   - operators.yaml
   - databases.yaml
+  - kafka.yaml

@@ -1,0 +1,16 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: kafka-pool
+  namespace: kafka-hub
+  labels:
+    strimzi.io/cluster: kafka-hub
+spec:
+  replicas: 1
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 30Gi
+        deleteClaim: false

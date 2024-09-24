@@ -68,7 +68,7 @@ spec:
   namespaceSelector:
     matchNames:
       - kafka-controller
-      - kafka
+      - kafka-hub
   podMetricsEndpoints:
     - path: /metrics
       port: tcp-prometheus

@@ -1,0 +1,94 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: kafka-hub
+  namespace: kafka-hub
+  annotations:
+    strimzi.io/kraft: enabled
+    strimzi.io/node-pools: enabled
+spec:
+  kafka:
+    version: 3.7.0
+    metadataVersion: 3.7-IV4
+    replicas: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        memory: 1Gi
+
+    logging:
+      type: inline
+      loggers:
+        kafka.root.logger.level: WARN
+
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+
+    config:
+      auto.create.topics.enable: false
+      log.cleanup.policy: "delete" # Cannot use 'compact' due to empty key in our data format
+      log.retention.bytes: 6442450944 # no default upper size limit, set to 6Gi
+      max.message.bytes: 1048576 # if you change this you need to review the kafka docs
+
+      transaction.state.log.min.isr: 1
+      min.insync.replicas: 1
+      default.replication.factor: 1
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      num.partitions: 1
+
+#      # replicate to n/2 for stability at small replica counts
+#      transaction.state.log.min.isr: { { (dunedaq.kafka.replicas / 2)  | round | int } }
+#      min.insync.replicas: { { (dunedaq.kafka.replicas / 2) | round | int } }
+#      default.replication.factor: { { (dunedaq.kafka.replicas / 2) | round | int } }
+#      offsets.topic.replication.factor: { { (dunedaq.kafka.replicas / 2) | round | int } }
+#      transaction.state.log.replication.factor: { { (dunedaq.kafka.replicas / 2) | round | int } }
+#      num.partitions: { { (dunedaq.kafka.replicas / 2) | round | int } }
+
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+
+    storage: # ignored
+      type: ephemeral
+
+  zookeeper:
+    replicas: 1
+    storage:
+      size: 20Gi
+      type: persistent-claim
+      deleteClaim: false
+
+  entityOperator:
+    topicOperator:
+      watchedNamespace: kafka-hub
+      reconciliationIntervalSeconds: 60
+      logging:
+        type: inline
+        loggers:
+          rootLogger.level: INFO
+    userOperator: { }
+    template:
+      topicOperatorContainer:
+        env:
+          # disable the use of finalizers to control topic deletion
+          - name: STRIMZI_USE_FINALIZERS
+            value: "false"
+
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+
+    template:

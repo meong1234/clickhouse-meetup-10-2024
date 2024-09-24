@@ -21,15 +21,18 @@ k8s-delete-cluster:
 ALTINITY-CLICKHOUSE-OPERATOR     := altinity/clickhouse-operator:0.23.3
 ALTINITY-METRICS-EXPORTER        := altinity/metrics-exporter:0.23.3
 CLICKHOUSE-SERVER        		 := clickhouse/clickhouse-server:24.2
-GOOSE-MIGRATION        		 := ghcr.io/kukymbr/goose-docker:3.19.2
+GOOSE-MIGRATION        		 	 := ghcr.io/kukymbr/goose-docker:3.19.2
+STRIMZI-OPERATOR        		 := quay.io/strimzi/operator:0.40.0
 
 k8s-pull-apps-docker:
 	docker pull $(ALTINITY-CLICKHOUSE-OPERATOR)
 	docker pull $(ALTINITY-METRICS-EXPORTER)
 	docker pull $(CLICKHOUSE-SERVER)
 	docker pull $(GOOSE-MIGRATION)
+	docker pull $(STRIMZI-OPERATOR)
 
 	kind load docker-image $(ALTINITY-CLICKHOUSE-OPERATOR) --name $(KIND_CLUSTER)
 	kind load docker-image $(ALTINITY-METRICS-EXPORTER) --name $(KIND_CLUSTER)
 	kind load docker-image $(CLICKHOUSE-SERVER) --name $(KIND_CLUSTER)
 	kind load docker-image $(GOOSE-MIGRATION) --name $(KIND_CLUSTER)
+	kind load docker-image $(STRIMZI-OPERATOR) --name $(KIND_CLUSTER)
