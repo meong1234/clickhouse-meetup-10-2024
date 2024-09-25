@@ -1,0 +1,46 @@
+logger:
+  level: DEBUG
+  format: json
+  add_timestamp: true
+  static_fields:
+    '@service': etl-orders-worker
+
+input:
+  kafka:
+    addresses:
+      - kafka-hub-kafka-bootstrap.kafka-hub.svc.cluster.local:9092
+    topics:
+      - pg-core.postgres.orders
+    consumer_group: "etl-orders-worker"
+    start_from_oldest: false
+    group:
+      session_timeout: 10s
+      heartbeat_interval: 3s
+      rebalance_timeout: 60s
+    batching:
+      count: 200
+      period: 1s
+
+pipeline:
+  processors:
+    - log:
+        level: DEBUG
+        message: "received messages"
+        fields_mapping: |
+          root.data = this
+
+output_resources:
+  - label: insert_metrics_clickhouse
+    sql_raw:
+      driver: "clickhouse"
+      dsn: "clickhouse://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+      query: '${!metadata("ddl_query")}'
+      args_mapping: root = this.query_parameter
+      unsafe_dynamic_query: true
+
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - stdout:
+          codec: lines

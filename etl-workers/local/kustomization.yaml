@@ -10,6 +10,13 @@ configMapGenerator:
         reloader.stakater.com/match: "true"
     files:
       - ../base/etl-battery-worker.yaml
+  - name: etl-orders-worker-cm
+    namespace: etl-workers
+    options:
+      annotations:
+        reloader.stakater.com/match: "true"
+    files:
+      - ../base/etl-orders-worker.yaml
 
 resources:
   - ../base/
@@ -17,3 +24,4 @@ resources:
 
 patches:
   - path: ./release-etl-battery-worker-patch.yaml
+  - path: ./release-etl-orders-worker-patch.yaml
