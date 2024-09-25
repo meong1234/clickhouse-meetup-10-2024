@@ -5,3 +5,4 @@ resources:
   - altinity-charts.yaml
   - strimzi-charts.yaml
   - cloudnative-pg-charts.yaml
+  - gruntwork-charts.yaml

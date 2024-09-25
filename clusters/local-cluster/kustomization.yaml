@@ -5,3 +5,4 @@ resources:
   - operators.yaml
   - databases.yaml
   - kafka.yaml
+  - workers.yaml

@@ -1,0 +1,18 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: etl-battery-worker
+  namespace: flux-system
+spec:
+#  dependsOn:
+#    - name: kafka-connect-debezium
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./etl-workers/local
+  prune: true
+  wait: true

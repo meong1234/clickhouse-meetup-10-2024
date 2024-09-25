@@ -1,0 +1,85 @@
+logger:
+  level: DEBUG
+  format: json
+  add_timestamp: true
+  static_fields:
+    '@service': etl-battery-worker
+
+input:
+  kafka:
+    addresses:
+      - kafka-hub-kafka-bootstrap.kafka-hub.svc.cluster.local:9092
+    topics:
+      - iot-battery
+    consumer_group: "etl-battery-worker"
+    start_from_oldest: false
+    group:
+      session_timeout: 10s
+      heartbeat_interval: 3s
+      rebalance_timeout: 60s
+    batching:
+      count: 200
+      period: 1s
+
+pipeline:
+  processors:
+    - log:
+        level: DEBUG
+        message: "received messages"
+        fields_mapping: |
+          root.data = this
+
+    - mapping: |
+        root = this
+        root.event_time = this.event_time.ts_parse("2006-01-02T15:04:05.000Z").ts_tz("Asia/Jakarta").ts_format("2006-01-02 15:04:05.000000000")
+
+output_resources:
+  - label: insert_metrics_clickhouse
+    sql_raw:
+      driver: "clickhouse"
+      dsn: "clickhouse://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+      query: '${!metadata("ddl_query")}'
+      args_mapping: root = this.query_parameter
+      unsafe_dynamic_query: true
+
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - resource: insert_metrics_clickhouse
+        processors:
+          - mapping: |
+              root.query_parameter = [ 
+                this.event_time, 
+                this.battery_serial,
+                this.latitude,
+                this.longitude,
+                this.state_of_charge,
+                this.state_of_health,
+                this.charge_cycles,
+                this.battery_voltage,
+                this.battery_current,
+                this.cell_voltages,
+                this.bms_temperature,
+                this.cell_temperatures
+              ]
+
+              root.ddl_query = "INSERT INTO iot_battery_metrics (  "
+              root.ddl_query = root.ddl_query + "  event_time, battery_serial, latitude, longitude, state_of_charge, "
+              root.ddl_query = root.ddl_query + "  state_of_health, charge_cycles, battery_voltage, battery_current, cell_voltages, "
+              root.ddl_query = root.ddl_query + "  bms_temperature, cell_temperatures "
+              root.ddl_query = root.ddl_query + ") SETTINGS async_insert=1, wait_for_async_insert=1, wait_for_async_insert_timeout=120 VALUES (  "
+              root.ddl_query = root.ddl_query + "  ?, ?, ?, ?, ?, "
+              root.ddl_query = root.ddl_query + "  ?, ?, ?, ?, ?, "
+              root.ddl_query = root.ddl_query + "  ?, ?"
+              root.ddl_query = root.ddl_query + ");  "
+
+              meta ddl_query = root.ddl_query
+              root.ddl_query = deleted()
+
+          - log:
+              level: DEBUG
+              message: "handle DDL"
+              fields_mapping: |
+                root.query_parameter = this.query_parameter
+                root.ddl_query = @.ddl_query

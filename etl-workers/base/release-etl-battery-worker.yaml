@@ -1,0 +1,111 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: etl-battery-worker
+  namespace: etl-workers
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: k8s-service
+      version: v0.2.24
+      sourceRef:
+        kind: HelmRepository
+        name: gruntwork-charts
+        namespace: flux-system
+      interval: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    deploymentAnnotations:
+      reloader.stakater.com/search: "true"
+    containerImage:
+      repository: jeffail/benthos
+      tag: 4.24
+      pullPolicy: IfNotPresent
+
+    fullnameOverride: "etl-battery-worker"
+    applicationName: "etl-battery-worker"
+    replicaCount: 1
+    namespace: "eliot"
+
+    containerArgs:
+      - "-c"
+      - "/etc/benthos/etl-battery-worker.yaml"
+
+    configMaps:
+      etl-battery-worker-cm:
+        as: volume
+        mountPath: /etc/benthos
+
+    secrets:
+      clickhouse-access-secrets:
+        as: environment
+        items:
+          db_name:
+            envVarName: DB_NAME
+          db_user:
+            envVarName: DB_USER
+          db_password:
+            envVarName: DB_PASSWORD
+          db_host:
+            envVarName: DB_HOST
+          db_port:
+            envVarName: DB_PORT
+
+    deploymentStrategy:
+      enabled: true
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+
+    livenessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /ping
+        port: 4195
+      periodSeconds: 10
+      timeoutSeconds: 2
+      initialDelaySeconds: 20
+
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /ready
+        port: 4195
+      periodSeconds: 10
+      timeoutSeconds: 2
+      initialDelaySeconds: 20
+
+    containerPorts:
+      debug:
+        port: 4195
+        protocol: TCP
+
+    service:
+      enabled: true
+      ports:
+        debug:
+          port: 4195
+          targetPort: debug
+          protocol: TCP
+
+    serviceMonitor:
+      enabled: true
+      namespace: etl-workers
+      labels: { }
+      endpoints:
+        default:
+          interval: 10s
+          scrapeTimeout: 10s
+          honorLabels: true
+          path: /metrics
+          port: debug
+          scheme: http

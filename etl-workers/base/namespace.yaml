@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: etl-workers
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
