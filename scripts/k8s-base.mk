@@ -5,7 +5,6 @@ TELEPRESENCE      := docker.io/datawire/tel2:2.17.0
 
 k8s-docker-pull:
 	docker pull $(KIND)
-	docker pull $(TELEPRESENCE)
 
 KIND_CLUSTER := clickhouse-starter-cluster
 
@@ -16,13 +15,25 @@ k8s-create-cluster:
 
 	kubectl wait --timeout=120s --namespace=local-path-storage --for=condition=Available deployment/local-path-provisioner
 
+
+TELEPRESENCE-MANAGER			 := docker.io/datawire/ambassador-telepresence-manager:2.17.0
+TELEPRESENCE-AGENT			     := docker.io/ambassador/ambassador-agent:1.0.21
+
 k8s-init-telepresence:
+	docker pull $(TELEPRESENCE)
+	docker pull $(TELEPRESENCE-MANAGER)
+	docker pull $(TELEPRESENCE-AGENT)
 	kind load docker-image $(TELEPRESENCE) --name $(KIND_CLUSTER)
-	telepresence --context=kind-$(KIND_CLUSTER) helm install --timeout 5m
+	kind load docker-image $(TELEPRESENCE-MANAGER) --name $(KIND_CLUSTER)
+	kind load docker-image $(TELEPRESENCE-AGENT) --name $(KIND_CLUSTER)
+	telepresence --context=kind-$(KIND_CLUSTER) helm install
 	telepresence --context=kind-$(KIND_CLUSTER) connect
 
 k8s-delete-cluster:
 	kind delete cluster --name $(KIND_CLUSTER)
+
+k8s-delete-telepresence:
+	telepresence quit -s
 
 ALTINITY-CLICKHOUSE-OPERATOR     := altinity/clickhouse-operator:0.23.3
 ALTINITY-METRICS-EXPORTER        := altinity/metrics-exporter:0.23.3

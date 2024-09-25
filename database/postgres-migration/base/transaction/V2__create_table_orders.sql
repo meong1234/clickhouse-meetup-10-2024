@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS orders (
     customer_name VARCHAR(255) NOT NULL,
     order_number VARCHAR(50) NOT NULL,
     order_state VARCHAR(20) NOT NULL,
+    order_type VARCHAR(50) NOT NULL,
     total_price DECIMAL(12, 2) NOT NULL
 );
 
