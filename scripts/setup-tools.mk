@@ -9,3 +9,4 @@ brew-common:
 
 python-common:
 	pip install kafka-python
+	pip install psycopg2-binary
