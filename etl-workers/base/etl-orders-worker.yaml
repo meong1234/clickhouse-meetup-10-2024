@@ -29,6 +29,9 @@ pipeline:
         fields_mapping: |
           root.data = this
 
+    - mapping: |
+        root = this.after
+
 output_resources:
   - label: insert_metrics_clickhouse
     sql_raw:
@@ -42,5 +45,45 @@ output:
   broker:
     pattern: fan_out
     outputs:
-      - stdout:
-          codec: lines
+      - resource: insert_metrics_clickhouse
+        processors:
+          - mapping: |
+              root.id = this.id 
+              root.created_at = this.created_at.ts_parse("2006-01-02T15:04:05.000000Z").ts_format("2006-01-02 15:04:05.000000000")
+              root.completed_at = this.completed_at.ts_parse("2006-01-02T15:04:05.000000Z").ts_format("2006-01-02 15:04:05.000000000")
+              root.customer_id = this.customer_id
+              root.customer_name = this.customer_name
+              root.order_number = this.order_number
+              root.order_state = this.order_state
+              root.order_type = this.order_type
+              root.total_price = this.total_price
+          - mapping: |
+              root.query_parameter = [ 
+                this.id, 
+                this.created_at,
+                this.completed_at,
+                this.customer_id,
+                this.customer_name,
+                this.order_number,
+                this.order_state,
+                this.order_type,
+                this.total_price
+              ]
+
+              root.ddl_query = "INSERT INTO trx_orders (  "
+              root.ddl_query = root.ddl_query + "  id, created_at, completed_at, customer_id, customer_name,  "
+              root.ddl_query = root.ddl_query + "  order_number, order_state, order_type, total_price "
+              root.ddl_query = root.ddl_query + ") SETTINGS async_insert=1, wait_for_async_insert=1, wait_for_async_insert_timeout=120 VALUES (  "
+              root.ddl_query = root.ddl_query + "  ?, ?, ?, ?, ?, "
+              root.ddl_query = root.ddl_query + "  ?, ?, ?, ?  "
+              root.ddl_query = root.ddl_query + ");  "
+
+              meta ddl_query = root.ddl_query
+              root.ddl_query = deleted()
+
+          - log:
+              level: DEBUG
+              message: "handle DDL"
+              fields_mapping: |
+                root.query_parameter = this.query_parameter
+                root.ddl_query = @.ddl_query

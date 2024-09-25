@@ -7,6 +7,9 @@ configMapGenerator:
       - ../base/sql/00001_iot_battery_metrics.sql
       - ../base/sql/00002_iot_battery_last_location.sql
       - ../base/sql/00003_iot_battery_last_location_mv.sql
+      - ../base/sql/00004_trx_orders.sql
+      - ../base/sql/00005_trx_agg_monthly_orders.sql
+      - ../base/sql/00006_trx_agg_monthly_orders_mv.sql
 resources:
   - clickhouse-migration-secrets.yaml
   - ../base/analytics-migration-job.yaml
