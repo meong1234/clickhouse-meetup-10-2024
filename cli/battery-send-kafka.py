@@ -2,8 +2,13 @@ import json
 import random
 import time
 import argparse
+import logging
 from kafka import KafkaProducer
+from kafka.errors import KafkaError
 from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Function to generate random float values for voltage, current, etc.
 def generate_random_data():
@@ -26,15 +31,20 @@ def generate_random_data():
 def create_producer(bootstrap_servers):
     producer = KafkaProducer(
         bootstrap_servers=bootstrap_servers,
+        api_version=(3, 7, 0),
         value_serializer=lambda v: json.dumps(v).encode('utf-8')  # JSON serialization
     )
     return producer
 
-# Send data to Kafka
+# Send data to Kafka with error handling
 def send_to_kafka(producer, topic, partition_key, data):
-    key_bytes = partition_key.encode('utf-8')
-    producer.send(topic, key=key_bytes, value=data)
-    producer.flush()  # Ensure the message is sent
+    try:
+        key_bytes = partition_key.encode('utf-8')
+        future = producer.send(topic, key=key_bytes, value=data)
+        future.get(timeout=10)  # Block until the message is sent (or timeout/error occurs)
+        logging.info(f"Successfully sent data: {data}")
+    except KafkaError as e:
+        logging.error(f"Failed to send data: {data} due to error: {e}")
 
 # Main function to repeatedly generate and send data
 def main(bootstrap_servers, topic, interval):
@@ -45,17 +55,16 @@ def main(bootstrap_servers, topic, interval):
             data = generate_random_data()
             battery_serial = data['battery_serial']  # Use battery_serial as partition key
             send_to_kafka(producer, topic, battery_serial, data)
-            print(f"Sent data: {data}")
             time.sleep(interval)  # Wait for the specified interval
     except KeyboardInterrupt:
-        print("Process interrupted. Exiting...")
+        logging.info("Process interrupted by user. Exiting...")
     finally:
         producer.close()
 
 # Command-line interface
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Send IoT battery metrics to Kafka.")
-    parser.add_argument('--bootstrap-servers', type=str, default="kafka-hub-kafka-bootstrap.eliot-db.svc.cluster.local:9092",
+    parser.add_argument('--bootstrap-servers', type=str, default="kafka-hub-kafka-bootstrap.kafka-hub.svc.cluster.local:9092",
                         help="Kafka bootstrap servers")
     parser.add_argument('--topic', type=str, default="iot-battery",
                         help="Kafka topic name")
